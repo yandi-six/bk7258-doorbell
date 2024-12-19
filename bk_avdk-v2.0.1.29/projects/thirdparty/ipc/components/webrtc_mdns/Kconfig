@@ -1,0 +1,6 @@
+menu "webrtc mdns"
+	config WEBRTC_MDNS
+		bool "Enable webrtc mdns"
+		default n
+endmenu
+

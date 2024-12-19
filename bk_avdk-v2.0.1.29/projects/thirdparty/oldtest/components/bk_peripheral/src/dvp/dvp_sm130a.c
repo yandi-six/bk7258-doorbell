@@ -1,0 +1,2289 @@
+// Copyright 2020-2021 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <driver/int.h>
+#include <os/mem.h>
+#include <driver/gpio.h>
+#include <driver/gpio_types.h>
+#include <driver/jpeg_enc.h>
+#include <driver/jpeg_enc_types.h>
+#include <driver/dvp_camera.h>
+#include <driver/dvp_camera_types.h>
+
+#include <driver/i2c.h>
+
+#include "dvp_sensor_devices.h"
+
+// 130a
+#define SM130A_WRITE_ADDRESS (0x6a) // 6a
+#define SM130A_READ_ADDRESS (0x6b)	// 6b
+
+#define SM130A_CHIP_ID_ADDR (0x01) // 01
+#define SM130A_CHIP_ID_VAL (0x1b)  // 1b
+
+#define TAG "sm130a"
+#define LOGI(...) BK_LOGI(TAG, ##__VA_ARGS__)
+#define LOGW(...) BK_LOGW(TAG, ##__VA_ARGS__)
+#define LOGD(...) BK_LOGD(TAG, ##__VA_ARGS__)
+
+#define SENSOR_I2C_READ(reg, value)                                         \
+	do                                                                      \
+	{                                                                       \
+		dvp_camera_i2c_read_uint8((SM130A_WRITE_ADDRESS >> 1), reg, value); \
+	} while (0)
+
+#define SENSOR_I2C_WRITE(reg, value)                                         \
+	do                                                                       \
+	{                                                                        \
+		dvp_camera_i2c_write_uint8((SM130A_WRITE_ADDRESS >> 1), reg, value); \
+	} while (0)
+
+bool sm130a_read_flag = false;
+
+// sm130a_DEV
+#if 1
+const uint8_t sensor_sm130a_init_talbe[][2] =
+{
+//sensor on    
+{0x00,0x00},
+{0x04,0x10}, //set ga_sel//04//14
+{0x05,0x00},
+
+{0x06,0x06}, //add 2024/6/20
+{0x07,0x88}, //add 2024/6/20
+{0x08,0x22}, //add 2024/6/20 //a2
+{0x09,0x21}, //add 2024/6/20 //11
+{0x0a,0x11}, //add 2024/6/20
+{0x0b,0x11},
+
+{0x10,0x04}, //under 48mhz}, //modify 2024/6/19  old 0x13
+//{0x10 {0x44 //at 64mhz for hd
+{0x11,0x32}, //under 48mhz},  //modify 2024/6/18  old 0x31
+//{0x11 {0x32 //at 64mhz for hd  //32
+
+{0x13,0x1a},
+{0x16,0xaa},
+{0x17,0x35},
+
+//ga mode for 24mhz 7.69fps sxga 
+{0x20,0x00}, //ga_bnkt//00
+{0x21,0x38}, //ga_hbnkt//10
+{0x22,0x01}, //ga_rowfil//01
+{0x23,0x13}, //ga_vbnkt//0a
+
+//gb mode for 24mhz 25fps vga 
+{0x24,0x00}, //gb_bnkt//00
+{0x25,0x0a}, //gb_hbnkt//0a
+{0x26,0x01}, //gb_rowfil//01
+{0x27,0x8d}, //gb_vbnkt  //8d
+
+//ga mode for 24mhz 7.69fps sxga 
+{0x30,0x00},  // ga_hds_h 
+{0x31,0x02},  // ga_hds_l
+{0x32,0x05},  // ga_hdw_h  1291
+{0x33,0x0b},  // ga_hdw_l
+
+//gb mode for 24mhz 25fps vga 
+{0x34,0x00},  // ga_vds_h 
+{0x35,0x98},  // ga_vds_l
+{0x36,0x02},  // ga_vdw_h 
+{0x37,0xe0},  // ga_vdw_l
+{0x51,0x02},
+
+// ae block
+{0x00,0x01},
+{0x10,0x90},  //modify 2024/6/20 old 0x90 //00
+{0x11,0x07}, //max_shutstep//07
+{0x12,0x7a}, //target
+{0x13,0x78},
+{0x14,0x74},
+{0x15,0x7f},
+
+{0x16,0x00},
+
+{0x17,0x80}, //shut_cntr
+{0x18,0x08},
+{0x19,0x04},
+
+//{0x1a,0x8a},//modify 2024/6/18  add the row
+{0x1b,0x04}, //aeblc_max   
+{0x1d,0x04},
+
+//target control
+{0x20,0x50},
+{0x24,0x72},
+{0x2a,0x40}, //dark_ref
+{0x2b,0x04}, //dark_cnt
+{0x2f,0x84}, //mask_frame 10.28 jej                  
+
+{0x34,0xa5}, //24mhz 25fps vga for gb mode//a0
+{0x35,0x83}, //24mhz 7.69fps sxga  ga mode//51
+
+{0x40,0x08},	//gain_min0
+{0x41,0x08},	//gain_min1
+{0x42,0x04},	//tgt_shut0
+{0x43,0x18},	//tgt_gain0
+{0x44,0x08},	//ref_gain0
+{0x45,0x08},	//tgt_shut1
+{0x46,0x18},	//tgt_gain1
+{0x47,0x13},	//ref_gain1
+{0x48,0x09},	//tgt_shut2
+{0x49,0x24},	//tgt_gain2
+{0x4a,0x15},	//ref_gain2
+{0x4b,0x0f},	//tgt_shut3
+{0x4c,0x34},	//tgt_gain3
+{0x4d,0x20},	//ref_gain3
+{0x4e,0x00},	//tgt_shut4
+{0x4f,0x00},	//tgt_gain4
+{0x50,0x00},	//ref_gain4
+{0x51,0x00},	//tgt_shut5
+{0x52,0x00},	//tgt_gain5
+{0x53,0x00},	//ref_gain5
+{0x54,0x38},	//gain_top
+{0x55,0x50},	//gain_max
+
+{0x56,0x01}, //half gain
+{0x5c,0x18}, //half gain off minimum gain
+{0x5d,0x55}, //gain_timing
+{0x5e,0x01}, //gain_speed
+{0x5f,0x2f}, //gain_speed_level
+
+{0x60,0x00},
+{0x61,0x7e},
+{0x62,0x7e},
+{0x63,0x7e},
+{0x64,0x7e},
+{0x65,0x00},
+{0x66,0x00},
+{0x67,0x00},
+{0x68,0x00},
+{0x69,0x00},
+{0x6a,0x00},
+{0x6b,0x00},
+{0x6c,0x05}, //weight
+{0x6d,0xab}, //mul weight
+
+//window target
+{0x70,0xcc},
+{0x73,0x84},
+{0x74,0xe0},
+{0x75,0xd0},
+{0x77,0x77},
+{0x79,0x80}, //fwin_max
+{0x7a,0x77}, //fwin_adj_max
+{0x7b,0x77}, //fwin_drk_max
+{0x7c,0x70}, //fwin_adrk_max
+{0x7d,0x70}, //fwin_min
+{0x7e,0x70}, //fwin_adj_min
+{0x7f,0x67}, //fwin_drk_min
+{0x80,0x67}, //fwin_adrk_min
+{0x81,0xb0}, //cwin_max
+
+{0x9f,0x02}, //awb working after ae 88%
+
+{0xb0,0xd3},
+{0xb1,0xe0},
+{0xb3,0xe0},
+{0xb4,0x06},
+
+{0xb5,0x80},	//ywrap
+{0xb6,0x80},
+{0xb7,0x00},
+{0xb8,0xc0},
+
+// awb block
+{0x00,0x02},
+{0x10,0x80}, 
+{0x11,0x48}, 
+{0x12,0x80}, 
+{0x13,0x5a}, 
+{0x14,0x5a}, 
+{0x15,0xcf}, 
+{0x18,0xe0}, //e0 //r gain top
+{0x19,0xa4}, //70 //r gain bot
+{0x1a,0xa3}, //f0 //b gain top
+{0x1b,0x70}, //70 //b gain bot
+{0x1c,0x88}, //cr top
+{0x1d,0x78}, //cr bot
+{0x1e,0x88}, //cb top
+{0x1f,0x78}, //cb bot
+{0x20,0x90}, //(cb+cr)/2 top
+{0x21,0x70}, //(cb+cr)/2 bot
+{0x23,0xff},	// y top
+{0x24,0x50},	// y bot
+{0x25,0x04},       // wht pixel > 6.5 %
+{0x26,0x42},       // {0x84  //{0x10  //{0x0d // bright start
+{0x27,0xc4},  //{0xca  // r gain top at bright condition
+{0x28,0xa8},  //{0xa0  // r gain bot at bright condition
+{0x29,0xa8},  //{0x98  // b gain top at bright condition
+{0x2a,0x90},  //{0x8a  // b gain bot at bright condition
+
+{0x2b,0xd0},  //{0xc0    // r gain top at dark condition
+{0x2c,0x88},    // r gain bot at dark condition
+{0x2d,0xe8},  //{0xd8    // b gain top at dark condition
+{0x2e,0x98},    // b gain bot at dark condition
+
+{0x2f,0x44},  //sampcont [6:4] : vertical skip count},[2:0]:horizontal skip count
+
+{0x38,0x05},         // awb lock range
+{0x39,0x06}, //{0x05
+{0x3c,0x13},
+{0x3d,0x6b},	//{0x48
+{0x41,0xa3},  // r gain(in)  for h~a detect
+{0x42,0xad},  // b gain(in)  for h~a detect
+{0x43,0xa3},  // r gain(out) for h~a detect
+{0x44,0xad},  // b gain(out) for h~a detect
+
+{0x45,0xc6},  // r gain(in)  for cwf detect
+{0x46,0x90},  // b gain(out) for cwf detect
+{0x47,0xc6},  // r gain(in)  for cwf detect
+{0x48,0x90},  // b gain(out) for cwf detect
+
+{0x5a,0xef}, //seltbnd  {t8},t7},....},t1}
+{0x5b,0x0f}, //white fine threshold
+{0x5c,0x30}, // ydiff th |yavgmax - yavgmin|
+{0x5d,0x98}, // [7] :enable bit},  |pregraygain-curgraygain| < [6:0] => don't update awb gain
+{0x5e,0x20}, // gain update scale => 4 code update
+
+{0x60,0x65}, //tcnt maxth1  57584}, 85%
+{0x61,0x66}, //tcnt maxth2
+{0x62,0x12}, //tcnt minth  7.5%
+
+{0x63,0x47}, //single wht maxth1 60%
+{0x64,0x4c}, //single wht maxth2
+{0x65,0x0c}, //single wht minth  5%
+{0x66,0x0c}, //scolor th  5%
+
+{0x67,0xb0}, // dark mode in threshold
+{0x68,0xa0}, // dark mode out threshold
+{0x69,0x0b}, // txmaxcnt > {th1},th2} 10 %
+{0x6a,0xe2},
+
+{0x70,0xe0}, //gvalueth   g < gvalueth for avg mode
+{0x71,0x10}, //gval min
+{0x72,0xe0}, //gval max
+
+{0x73,0x77}, //{0x80 //t1 rgain
+{0x74,0xeb}, //{0xd5 //t1 bgain
+{0x75,0x70},
+{0x76,0x81}, //{0x89 //t2 rgain
+{0x77,0xd7}, //{0xc1 //t2 bgain
+{0x78,0x50},
+{0x79,0x8d}, //{0xab //t3 rgain
+{0x7a,0xd4}, //{0xbb //t3 bgain
+{0x7b,0x70},
+{0x7c,0x98}, //{0xb9 //t4 rgain smy
+{0x7d,0xcd}, //t4 bgain
+{0x7e,0x50},
+{0x80,0xb1}, //{0xbb //t5 rgain
+{0x81,0xb8}, //{0x8f //t5 bgain
+{0x82,0x34},
+{0x83,0xc1}, //{0xd0 //t6 rgain
+{0x84,0x9c}, //{0x8c //t6 bgain
+{0x85,0x43},
+{0x86,0xd7}, //t7 rgain
+{0x87,0x82}, //t7 bgain
+{0x88,0x11},
+{0x89,0xd8}, //t8 rgain
+{0x8a,0x82}, //t8 bgain
+{0x8b,0x16},
+{0x8c,0xcd}, //rgain for outdoor sky
+{0x8d,0x94}, //bgain for outdoor sky
+{0x8e,0x66},
+{0x90,0x81}, //rgain for dark condition
+{0x91,0xdd}, //bgain for dark condition
+{0x92,0x76}, //dcrbgain {1'b0},darrgain[2:0]},1]},1'b0},darkbgain[2:0]}
+
+{0x94,0x75}, //t1r/g min   h light
+{0x95,0x88}, //t1r/g max
+{0x96,0x4a}, //t1b/g min
+{0x97,0x55}, //t1b/g max
+
+{0x98,0x68}, //t2r/g min   alight
+{0x99,0x76}, //t2r/g max
+{0x9a,0x55}, //t2b/g min
+{0x9b,0x60}, //t2b/g max
+
+{0x9c,0x5e}, //t3r/g min   tl84
+{0x9d,0x67}, //t3r/g max
+{0x9e,0x5d}, //t3b/g min
+{0x9f,0x67}, //t3b/g max
+
+{0xa0,0x59}, //t4r/g min   cwf
+{0xa1,0x5e}, //t4r/g max
+{0xa2,0x5d}, //t4b/g min
+{0xa3,0x66}, //t4b/g max
+ 
+{0xa4,0x00}, //t5r/g min   real3
+{0xa5,0x00}, //t5r/g max
+{0xa6,0x00}, //t5b/g min
+{0xa7,0x00}, //t5b/g max
+ 
+{0xa8,0x53}, //t6r/g min   real2
+{0xa9,0x5d}, //t6r/g max
+{0xaa,0x60}, //t6b/g min
+{0xab,0x70}, //{0x6d //t6b/g max
+ 
+{0xac,0x4c}, //t7r/g min    real1
+{0xad,0x58}, //{0x57 //t7r/g max
+{0xae,0x6f}, //t7b/g min
+{0xaf,0x86}, //t7b/g max
+ 
+{0xb0,0x47}, //t8r/g min    d65
+{0xb1,0x4e}, //t8r/g max
+{0xb2,0x80}, //t8b/g min
+{0xb3,0x99}, //t8b/g max
+
+//idp
+{0x00,0x03},
+{0x10,0xff},
+{0x11,0x19},//1d//0d//09//11//18//19
+{0x12,0x3d}, 
+{0x13,0xb1}, 
+{0x14,0xf8},
+ 
+{0x30,0x68}, //{0x50 subsampling
+{0x31,0x00},
+{0x35,0x26},
+{0x39,0x08},
+{0x3e,0x00}, //{0x90 subsampling
+
+// {0x94,0x02}, //window size//05
+// {0x95,0x80},	//00
+// {0x96,0x01},	//02
+// {0x97,0xe0},	//d0
+// {0x00,0x04},	//04
+{0x94,0x05}, //window size//05
+{0x95,0x00},	//00
+{0x96,0x02},	//02
+{0x97,0xd0},	//d0
+{0x00,0x04},	//04
+//shading center                                        
+{0x10,0x9d}, //aa //95 //d //a9 //b9 //a7                                      
+{0x11,0x82}, //76                                          
+//shading offset                                        
+{0x12,0x00},                                              
+{0x13,0x00},                                              
+{0x14,0x00},                                              
+{0x15,0x00},                                              
+//shading r pixel horizontal}, vertical gain             
+{0x16,0xea}, //cc //66  //d6  //4d  //9f                                         
+{0x17,0x60}, //a0 //70 //8e  //a8  //62  //a8 //86 //e0                            
+{0x18,0x90},  //b6  //a0                                         
+{0x19,0x90}, //50  //80  //a3                                         
+//shading gr pixel horizontal}, vertical gain            
+{0x1a,0xde}, //ee //aa  //8a                                              
+{0x1b,0x30}, //40  //70                                         
+{0x1c,0x40}, //50                                              
+{0x1d,0x70}, //80 //38                                              
+//shading gb pixel horizontal}, vertical gain            
+{0x1e,0xde},  //ee //aa   //8a                                              
+{0x1f,0x30}, //40  //70                                         
+{0x20,0x40}, //50                                              
+{0x21,0x70}, //80 //38                                              
+//shading b pixel horizontal}, vertical gain             
+{0x22,0xa2},  //e2                                              
+{0x23,0x20}, //70 //a2 //8d                                          
+{0x24,0x60}, //ff //c0 //c6                                              
+{0x25,0x10}, //30 //70 //30 //80                                              
+//shading start gain                                    
+{0x26,0x80},                                              
+{0x27,0x80},                                              
+{0x28,0x80},                                              
+{0x29,0x80},                                              
+//r shading position gain                               
+{0x2a,0x77},    //44   //55                                        
+{0x2b,0x45}, //88    //ad   //ab                                        
+{0x2c,0x56}, //8a    //34  //bc   //21 //8a                                    
+{0x2d,0x67}, //de    //ac    //de  //b cab   //9b                                        
+{0x2e,0x89}, //9b    //cc    //cd   //89                                     
+//gr shading position gain                              
+{0x2f,0x33}, //87                                              
+{0x30,0x45}, //54 //a9                                              
+{0x31,0x56}, //88                                              
+{0x32,0x67}, //aa  //99                                              
+{0x33,0x78}, //a9 //ba //a8   //87                                           
+//gb shading position gain                              
+{0x34,0x33}, //87                                              
+{0x35,0x45}, //54 //a9                                              
+{0x36,0x56}, //88                                              
+{0x37,0x67}, //aa  //99                                              
+{0x38,0x78}, //a9  //87                                             
+//b  shading position gain                              
+{0x39,0x44}, //44                                              
+{0x3a,0x34}, //43 //77                                              
+{0x3b,0x34}, //45 //56  //77                                              
+{0x3c,0x67}, //87 //76                                              
+{0x3d,0x89}, //78 //ba //64      
+           
+//cma
+{0x50,0xaf},
+{0x51,0x6d}, 
+{0x52,0xca}, 
+{0x53,0x09}, 
+{0x54,0xf3}, 
+{0x55,0x5f}, 
+{0x56,0xee}, 
+{0x57,0xf9}, 
+{0x58,0xc3}, 
+{0x59,0x84}, 
+
+//cmb 
+{0x60,0xef}, 
+{0x61,0x6c}, 
+{0x62,0xcb}, 
+{0x63,0x09}, 
+{0x64,0xef}, 
+{0x65,0x5a}, 
+{0x66,0xf7}, 
+{0x67,0xf6}, 
+{0x68,0xa9}, 
+{0x69,0xa1}, 
+ 
+//cmc
+{0x70,0x2f},
+{0x71,0x48}, 
+{0x72,0xe2}, 
+{0x73,0x16}, 
+{0x74,0xeb}, 
+{0x75,0x5a}, 
+{0x76,0xfb}, 
+{0x77,0xf3}, 
+{0x78,0xcd}, 
+{0x79,0x80}, 
+ 
+//cmd
+{0x80,0x2f},
+{0x81,0x4e}, 
+{0x82,0xe2}, 
+{0x83,0x10}, 
+{0x84,0xeb}, 
+{0x85,0x5a}, 
+{0x86,0xfb}, 
+{0x87,0xf3}, 
+{0x88,0xcd}, 
+{0x89,0x80}, 
+ 
+//gammma 
+{0x90,0x00}, 
+{0x91,0x02}, 
+{0x92,0x05}, 
+{0x93,0x0e}, 
+{0x94,0x17}, 
+{0x95,0x22}, 
+{0x96,0x35}, 
+{0x97,0x46}, 
+{0x98,0x55}, 
+{0x99,0x62}, 
+{0x9a,0x78}, 
+{0x9b,0x89}, 
+{0x9c,0x98}, 
+{0x9d,0xa6}, 
+{0x9e,0xb4}, 
+{0x9f,0xcc}, 
+{0xa0,0xe0}, 
+{0xa1,0xf0}, 
+{0xa2,0xf9}, 
+{0xa3,0xff}, 
+
+{0xa4,0x00},  
+{0xa5,0x02},  
+{0xa6,0x05},  
+{0xa7,0x0e},  
+{0xa8,0x17},  
+{0xa9,0x22},  
+{0xaa,0x35},  
+{0xab,0x46},  
+{0xac,0x55},  
+{0xad,0x62},  
+{0xae,0x78},  
+{0xaf,0x89},  
+{0xb0,0x98},  
+{0xb1,0xa6},  
+{0xb2,0xb4},  
+{0xb3,0xcc},  
+{0xb4,0xe0},  
+{0xb5,0xf0},  
+{0xb6,0xf9},  
+{0xb7,0xff},  
+
+{0xb8,0x00}, 
+{0xb9,0x02}, 
+{0xba,0x05}, 
+{0xbb,0x0e}, 
+{0xbc,0x17}, 
+{0xbd,0x22}, 
+{0xbe,0x35}, 
+{0xbf,0x46}, 
+{0xc0,0x55}, 
+{0xc1,0x62}, 
+{0xc2,0x78}, 
+{0xc3,0x89}, 
+{0xc4,0x98}, 
+{0xc5,0xa6}, 
+{0xc6,0xb4}, 
+{0xc7,0xcc}, 
+{0xc8,0xe0}, 
+{0xc9,0xf0}, 
+{0xca,0xf9}, 
+{0xcb,0xff},
+
+//bayer filter threshold
+{0x00,0x05},
+{0x11,0x16},
+{0x14,0xfc},
+{0x15,0x00},
+{0x18,0x00},
+{0x1c,0x80},
+{0x1f,0x0c},
+{0x24,0x30},
+
+
+{0x30,0xbf},
+{0x31,0xbb},
+{0x32,0xbb},
+{0x33,0xbb},
+{0x34,0x0a},
+
+{0x41,0x00},
+
+//dark color suppression off
+{0x00,0x06},
+//coring
+{0x49,0xc9}, //cbcorthd
+{0x4a,0xc9},
+{0x4b,0x80},
+{0x4c,0x80},
+
+//edge control
+{0x50,0xf2},
+{0x51,0x10}, // [7:0] positive edge gain (x1/16)
+{0x52,0x10}, //0d // [7:0] negative edge gain (x1/16)
+{0x53,0x00}, // [3:0] core value of positive edge
+{0x54,0x14},
+{0x55,0x0f},
+{0x56,0x08},
+{0x57,0x00}, // [3:0] core value of negative edge
+{0x58,0x14},
+{0x59,0x0f},
+{0x5a,0x08},         
+{0x5b,0x10}, //20 // [7:0] positive edge clip value
+{0x5c,0x20}, //10 //20 // [7:0] negative edge clip value
+{0x5d,0x20},
+{0x5e,0x10},
+{0x5f,0x00},
+
+{0xc0,0x60},
+{0xc1,0x24},  
+
+//sensor on    
+{0x00,0x00},
+{0x03,0x05},
+};
+#endif
+
+#if 0
+const uint8_t sensor_sm130a_init_talbe[][2] =
+{
+//sensor on    
+{0x00,0x00},
+{0x04,0x10}, //set ga_sel//04//14
+{0x05,0x00},
+//{0x06,0x01},
+
+{0x10,0x13}, //under 48mhz}, //modify 2024/6/19  old 0x13
+//{0x10 {0x44 //at 64mhz for hd
+{0x11,0x31}, //under 48mhz},  //modify 2024/6/18  old 0x31
+//{0x11 {0x32 //at 64mhz for hd
+{0x13,0x1a},
+{0x16,0xaa},
+{0x17,0x35},
+
+//ga mode for 24mhz 7.69fps sxga 
+{0x20,0x00}, //ga_bnkt
+{0x21,0x10}, //ga_hbnkt
+{0x22,0x01}, //ga_rowfil
+{0x23,0x0a}, //ga_vbnkt
+
+//gb mode for 24mhz 25fps vga 
+{0x24,0x00}, //gb_bnkt   //modify 2024/6/18  old 0x00
+{0x25,0x00}, //gb_hbnkt  //modify 2024/6/18  old 0x0a
+{0x26,0x11}, //gb_rowfil //modify 2024/6/18  old 0x01
+{0x27,0x0d}, //gb_vbnkt  //8d  //modify 2024/6/18  old 0x8d
+
+//ga mode for 24mhz 7.69fps sxga 
+{0x30,0x00},  // ga_hds_h 
+{0x31,0x02},  // ga_hds_l
+{0x32,0x03},  // ga_hdw_h  1291  //modify 2024/6/19  old 0x05
+{0x33,0x20},  // ga_hdw_l    //modify 2024/6/19  old 0x0b
+
+//gb mode for 24mhz 25fps vga 
+{0x34,0x00},  // ga_vds_h 
+{0x35,0x98},  // ga_vds_l
+{0x36,0x02},  // ga_vdw_h 
+{0x37,0xe0},  // ga_vdw_l
+{0x51,0x02},
+
+// ae block
+{0x00,0x01},
+{0x10,0x94},//modify 2024/6/18 old 0x90
+{0x11,0x07}, //max_shutstep
+{0x12,0x7a}, //target
+{0x13,0x78},
+{0x14,0x74},
+{0x15,0x7f},
+
+{0x16,0x00},
+
+{0x17,0x80}, //shut_cntr
+{0x18,0x88}, //modify 2024/6/18  old 0x08
+{0x19,0x84}, //modify 2024/6/18  old 0x04
+
+{0x1a,0x8a},//modify 2024/6/18  add the row
+{0x1b,0x04}, //aeblc_max   
+{0x1d,0x04},
+
+//target control
+{0x20,0x50},
+{0x24,0x72},  
+{0x2a,0x40}, //dark_ref
+{0x2b,0x04}, //dark_cnt
+{0x2f,0x84}, //mask_frame 10.28 jej                  
+
+{0x34,0x10}, //24mhz 25fps vga for gb mode //modify 2024/6/18  old 0xa0
+{0x35,0xa1}, //24mhz 7.69fps sxga  ga mode   //modify 2024/6/18  old 0x51
+
+{0x40,0x08},	//gain_min0
+{0x41,0x08},	//gain_min1
+{0x42,0x04},	//tgt_shut0
+{0x43,0x18},	//tgt_gain0
+{0x44,0x08},	//ref_gain0
+{0x45,0x08},	//tgt_shut1
+{0x46,0x18},	//tgt_gain1
+{0x47,0x13},	//ref_gain1
+{0x48,0x09},	//tgt_shut2
+{0x49,0x24},	//tgt_gain2
+{0x4a,0x15},	//ref_gain2
+{0x4b,0x0f},	//tgt_shut3
+{0x4c,0x34},	//tgt_gain3
+{0x4d,0x20},	//ref_gain3
+{0x4e,0x00},	//tgt_shut4
+{0x4f,0x00},	//tgt_gain4
+{0x50,0x00},	//ref_gain4
+{0x51,0x00},	//tgt_shut5
+{0x52,0x00},	//tgt_gain5
+{0x53,0x00},	//ref_gain5
+{0x54,0x38},	//gain_top
+{0x55,0x40},	//gain_max  //modify 2024/6/18  old 0x50 0x30
+
+{0x56,0x01}, //half gain
+{0x5c,0x18}, //half gain off minimum gain
+{0x5d,0x55}, //gain_timing
+{0x5e,0x01}, //gain_speed
+{0x5f,0x2f}, //gain_speed_level
+
+{0x60,0x00},
+{0x61,0x7e},
+{0x62,0x7e},
+{0x63,0x7e},
+{0x64,0x7e},
+{0x65,0x00},
+{0x66,0x00},
+{0x67,0x00},
+{0x68,0x00},
+{0x69,0x00},
+{0x6a,0x00},
+{0x6b,0x00},
+{0x6c,0x05}, //weight
+{0x6d,0xab}, //mul weight
+
+//window target
+{0x70,0xcc},
+{0x73,0x84},
+{0x74,0xe0},
+{0x75,0xd0},
+{0x77,0x77},
+{0x79,0x80}, //fwin_max
+{0x7a,0x77}, //fwin_adj_max
+{0x7b,0x77}, //fwin_drk_max
+{0x7c,0x70}, //fwin_adrk_max
+{0x7d,0x70}, //fwin_min
+{0x7e,0x70}, //fwin_adj_min
+{0x7f,0x67}, //fwin_drk_min
+{0x80,0x67}, //fwin_adrk_min
+{0x81,0xb0}, //cwin_max
+
+{0x9f,0x02}, //awb working after ae 88%
+
+{0xb0,0xd3},
+{0xb1,0xe0},
+{0xb3,0xe0},
+{0xb4,0x06},
+
+{0xb5,0x80},	//ywrap
+{0xb6,0x80},
+{0xb7,0x00},
+{0xb8,0xc0},
+
+// awb block
+{0x00,0x02},
+{0x10,0x80}, 
+{0x11,0x48}, 
+{0x12,0x80}, 
+{0x13,0x5a}, 
+{0x14,0x5a}, 
+{0x15,0xcf}, 
+{0x18,0xe0}, //e0 //r gain top
+{0x19,0xa4}, //70 //r gain bot
+{0x1a,0xa3}, //f0 //b gain top
+{0x1b,0x70}, //70 //b gain bot
+{0x1c,0x88}, //cr top
+{0x1d,0x78}, //cr bot
+{0x1e,0x88}, //cb top
+{0x1f,0x78}, //cb bot
+{0x20,0x90}, //(cb+cr)/2 top
+{0x21,0x70}, //(cb+cr)/2 bot
+{0x23,0xff},	// y top
+{0x24,0x50},	// y bot
+{0x25,0x04},       // wht pixel > 6.5 %
+{0x26,0x42},       // {0x84  //{0x10  //{0x0d // bright start
+{0x27,0xc4},  //{0xca  // r gain top at bright condition
+{0x28,0xa8},  //{0xa0  // r gain bot at bright condition
+{0x29,0xa8},  //{0x98  // b gain top at bright condition
+{0x2a,0x90},  //{0x8a  // b gain bot at bright condition
+
+{0x2b,0xd0},  //{0xc0    // r gain top at dark condition
+{0x2c,0x88},    // r gain bot at dark condition
+{0x2d,0xe8},  //{0xd8    // b gain top at dark condition
+{0x2e,0x98},    // b gain bot at dark condition
+
+{0x2f,0x44},  //sampcont [6:4] : vertical skip count},[2:0]:horizontal skip count
+
+{0x38,0x05},         // awb lock range
+{0x39,0x06}, //{0x05
+{0x3c,0x13},
+{0x3d,0x6b},	//{0x48
+{0x41,0xa3},  // r gain(in)  for h~a detect
+{0x42,0xad},  // b gain(in)  for h~a detect
+{0x43,0xa3},  // r gain(out) for h~a detect
+{0x44,0xad},  // b gain(out) for h~a detect
+
+{0x45,0xc6},  // r gain(in)  for cwf detect
+{0x46,0x90},  // b gain(out) for cwf detect
+{0x47,0xc6},  // r gain(in)  for cwf detect
+{0x48,0x90},  // b gain(out) for cwf detect
+
+{0x5a,0xef}, //seltbnd  {t8},t7},....},t1}
+{0x5b,0x0f}, //white fine threshold
+{0x5c,0x30}, // ydiff th |yavgmax - yavgmin|
+{0x5d,0x98}, // [7] :enable bit},  |pregraygain-curgraygain| < [6:0] => don't update awb gain
+{0x5e,0x20}, // gain update scale => 4 code update
+
+{0x60,0x65}, //tcnt maxth1  57584}, 85%
+{0x61,0x66}, //tcnt maxth2
+{0x62,0x12}, //tcnt minth  7.5%
+
+{0x63,0x47}, //single wht maxth1 60%
+{0x64,0x4c}, //single wht maxth2
+{0x65,0x0c}, //single wht minth  5%
+{0x66,0x0c}, //scolor th  5%
+
+{0x67,0xb0}, // dark mode in threshold
+{0x68,0xa0}, // dark mode out threshold
+{0x69,0x0b}, // txmaxcnt > {th1},th2} 10 %
+{0x6a,0xe2},
+
+{0x70,0xe0}, //gvalueth   g < gvalueth for avg mode
+{0x71,0x10}, //gval min
+{0x72,0xe0}, //gval max
+
+{0x73,0x77}, //{0x80 //t1 rgain
+{0x74,0xeb}, //{0xd5 //t1 bgain
+{0x75,0x70},
+{0x76,0x81}, //{0x89 //t2 rgain
+{0x77,0xd7}, //{0xc1 //t2 bgain
+{0x78,0x50},
+{0x79,0x8d}, //{0xab //t3 rgain
+{0x7a,0xd4}, //{0xbb //t3 bgain
+{0x7b,0x70},
+{0x7c,0x98}, //{0xb9 //t4 rgain smy
+{0x7d,0xcd}, //t4 bgain
+{0x7e,0x50},
+{0x80,0xb1}, //{0xbb //t5 rgain
+{0x81,0xb8}, //{0x8f //t5 bgain
+{0x82,0x34},
+{0x83,0xc1}, //{0xd0 //t6 rgain
+{0x84,0x9c}, //{0x8c //t6 bgain
+{0x85,0x43},
+{0x86,0xd7}, //t7 rgain
+{0x87,0x82}, //t7 bgain
+{0x88,0x11},
+{0x89,0xd8}, //t8 rgain
+{0x8a,0x82}, //t8 bgain
+{0x8b,0x16},
+{0x8c,0xcd}, //rgain for outdoor sky
+{0x8d,0x94}, //bgain for outdoor sky
+{0x8e,0x66},
+{0x90,0x81}, //rgain for dark condition
+{0x91,0xdd}, //bgain for dark condition
+{0x92,0x76}, //dcrbgain {1'b0},darrgain[2:0]},1]},1'b0},darkbgain[2:0]}
+
+{0x94,0x75}, //t1r/g min   h light
+{0x95,0x88}, //t1r/g max
+{0x96,0x4a}, //t1b/g min
+{0x97,0x55}, //t1b/g max
+
+{0x98,0x68}, //t2r/g min   alight
+{0x99,0x76}, //t2r/g max
+{0x9a,0x55}, //t2b/g min
+{0x9b,0x60}, //t2b/g max
+
+{0x9c,0x5e}, //t3r/g min   tl84
+{0x9d,0x67}, //t3r/g max
+{0x9e,0x5d}, //t3b/g min
+{0x9f,0x67}, //t3b/g max
+
+{0xa0,0x59}, //t4r/g min   cwf
+{0xa1,0x5e}, //t4r/g max
+{0xa2,0x5d}, //t4b/g min
+{0xa3,0x66}, //t4b/g max
+ 
+{0xa4,0x00}, //t5r/g min   real3
+{0xa5,0x00}, //t5r/g max
+{0xa6,0x00}, //t5b/g min
+{0xa7,0x00}, //t5b/g max
+ 
+{0xa8,0x53}, //t6r/g min   real2
+{0xa9,0x5d}, //t6r/g max
+{0xaa,0x60}, //t6b/g min
+{0xab,0x70}, //{0x6d //t6b/g max
+ 
+{0xac,0x4c}, //t7r/g min    real1
+{0xad,0x58}, //{0x57 //t7r/g max
+{0xae,0x6f}, //t7b/g min
+{0xaf,0x86}, //t7b/g max
+ 
+{0xb0,0x47}, //t8r/g min    d65
+{0xb1,0x4e}, //t8r/g max
+{0xb2,0x80}, //t8b/g min
+{0xb3,0x99}, //t8b/g max
+
+//idp
+{0x00,0x03},
+{0x10,0xff},
+{0x11,0x19},//1d//0d//09//11//18//19
+{0x12,0x3d}, 
+{0x13,0xb1}, 
+{0x14,0xf8},
+ 
+{0x30,0x68}, //{0x50 subsampling
+{0x31,0x00},
+{0x35,0x26},
+{0x39,0x08},
+{0x3e,0x00}, //{0x90 subsampling
+ {0x94,0x05}, //window size
+{0x95,0x00},
+{0x96,0x02},
+{0x97,0xd0},
+{0x00,0x04},
+//shading center                                        
+{0x10,0x9d}, //aa //95 //d //a9 //b9 //a7                                      
+{0x11,0x82}, //76                                          
+//shading offset                                        
+{0x12,0x00},                                              
+{0x13,0x00},                                              
+{0x14,0x00},                                              
+{0x15,0x00},                                              
+//shading r pixel horizontal}, vertical gain             
+{0x16,0xea}, //cc //66  //d6  //4d  //9f                                         
+{0x17,0x60}, //a0 //70 //8e  //a8  //62  //a8 //86 //e0                            
+{0x18,0x90},  //b6  //a0                                         
+{0x19,0x90}, //50  //80  //a3                                         
+//shading gr pixel horizontal}, vertical gain            
+{0x1a,0xde}, //ee //aa  //8a                                              
+{0x1b,0x30}, //40  //70                                         
+{0x1c,0x40}, //50                                              
+{0x1d,0x70}, //80 //38                                              
+//shading gb pixel horizontal}, vertical gain            
+{0x1e,0xde},  //ee //aa   //8a                                              
+{0x1f,0x30}, //40  //70                                         
+{0x20,0x40}, //50                                              
+{0x21,0x70}, //80 //38                                              
+//shading b pixel horizontal}, vertical gain             
+{0x22,0xa2},  //e2                                              
+{0x23,0x20}, //70 //a2 //8d                                          
+{0x24,0x60}, //ff //c0 //c6                                              
+{0x25,0x10}, //30 //70 //30 //80                                              
+//shading start gain                                    
+{0x26,0x80},                                              
+{0x27,0x80},                                              
+{0x28,0x80},                                              
+{0x29,0x80},                                              
+//r shading position gain                               
+{0x2a,0x77},    //44   //55                                        
+{0x2b,0x45}, //88    //ad   //ab                                        
+{0x2c,0x56}, //8a    //34  //bc   //21 //8a                                    
+{0x2d,0x67}, //de    //ac    //de  //b cab   //9b                                        
+{0x2e,0x89}, //9b    //cc    //cd   //89                                     
+//gr shading position gain                              
+{0x2f,0x33}, //87                                              
+{0x30,0x45}, //54 //a9                                              
+{0x31,0x56}, //88                                              
+{0x32,0x67}, //aa  //99                                              
+{0x33,0x78}, //a9 //ba //a8   //87                                           
+//gb shading position gain                              
+{0x34,0x33}, //87                                              
+{0x35,0x45}, //54 //a9                                              
+{0x36,0x56}, //88                                              
+{0x37,0x67}, //aa  //99                                              
+{0x38,0x78}, //a9  //87                                             
+//b  shading position gain                              
+{0x39,0x44}, //44                                              
+{0x3a,0x34}, //43 //77                                              
+{0x3b,0x34}, //45 //56  //77                                              
+{0x3c,0x67}, //87 //76                                              
+{0x3d,0x89}, //78 //ba //64      
+           
+//cma
+{0x50,0xaf},
+{0x51,0x6d}, 
+{0x52,0xca}, 
+{0x53,0x09}, 
+{0x54,0xf3}, 
+{0x55,0x5f}, 
+{0x56,0xee}, 
+{0x57,0xf9}, 
+{0x58,0xc3}, 
+{0x59,0x84}, 
+
+//cmb 
+{0x60,0xef}, 
+{0x61,0x6c}, 
+{0x62,0xcb}, 
+{0x63,0x09}, 
+{0x64,0xef}, 
+{0x65,0x5a}, 
+{0x66,0xf7}, 
+{0x67,0xf6}, 
+{0x68,0xa9}, 
+{0x69,0xa1}, 
+ 
+//cmc
+{0x70,0x2f},
+{0x71,0x48}, 
+{0x72,0xe2}, 
+{0x73,0x16}, 
+{0x74,0xeb}, 
+{0x75,0x5a}, 
+{0x76,0xfb}, 
+{0x77,0xf3}, 
+{0x78,0xcd}, 
+{0x79,0x80}, 
+ 
+//cmd
+{0x80,0x2f},
+{0x81,0x4e}, 
+{0x82,0xe2}, 
+{0x83,0x10}, 
+{0x84,0xeb}, 
+{0x85,0x5a}, 
+{0x86,0xfb}, 
+{0x87,0xf3}, 
+{0x88,0xcd}, 
+{0x89,0x80}, 
+ 
+//gammma 
+{0x90,0x00}, 
+{0x91,0x02}, 
+{0x92,0x05}, 
+{0x93,0x0e}, 
+{0x94,0x17}, 
+{0x95,0x22}, 
+{0x96,0x35}, 
+{0x97,0x46}, 
+{0x98,0x55}, 
+{0x99,0x62}, 
+{0x9a,0x78}, 
+{0x9b,0x89}, 
+{0x9c,0x98}, 
+{0x9d,0xa6}, 
+{0x9e,0xb4}, 
+{0x9f,0xcc}, 
+{0xa0,0xe0}, 
+{0xa1,0xf0}, 
+{0xa2,0xf9}, 
+{0xa3,0xff}, 
+
+{0xa4,0x00},  
+{0xa5,0x02},  
+{0xa6,0x05},  
+{0xa7,0x0e},  
+{0xa8,0x17},  
+{0xa9,0x22},  
+{0xaa,0x35},  
+{0xab,0x46},  
+{0xac,0x55},  
+{0xad,0x62},  
+{0xae,0x78},  
+{0xaf,0x89},  
+{0xb0,0x98},  
+{0xb1,0xa6},  
+{0xb2,0xb4},  
+{0xb3,0xcc},  
+{0xb4,0xe0},  
+{0xb5,0xf0},  
+{0xb6,0xf9},  
+{0xb7,0xff},  
+
+{0xb8,0x00}, 
+{0xb9,0x02}, 
+{0xba,0x05}, 
+{0xbb,0x0e}, 
+{0xbc,0x17}, 
+{0xbd,0x22}, 
+{0xbe,0x35}, 
+{0xbf,0x46}, 
+{0xc0,0x55}, 
+{0xc1,0x62}, 
+{0xc2,0x78}, 
+{0xc3,0x89}, 
+{0xc4,0x98}, 
+{0xc5,0xa6}, 
+{0xc6,0xb4}, 
+{0xc7,0xcc}, 
+{0xc8,0xe0}, 
+{0xc9,0xf0}, 
+{0xca,0xf9}, 
+{0xcb,0xff},
+
+//bayer filter threshold
+{0x00,0x05},
+{0x11,0x16},
+{0x14,0xfc},
+{0x15,0x00},
+{0x18,0x00},
+{0x1c,0x80},
+{0x1f,0x0c},
+{0x24,0x30},
+
+
+{0x30,0xbf},
+{0x31,0xbb},
+{0x32,0xbb},
+{0x33,0xbb},
+{0x34,0x0a},
+
+{0x41,0x00},
+
+//dark color suppression off
+{0x00,0x06},
+//coring
+{0x49,0xc9}, //cbcorthd
+{0x4a,0xc9},
+{0x4b,0x80},
+{0x4c,0x80},
+
+//edge control
+{0x50,0xf2},
+{0x51,0x15}, // [7:0] positive edge gain (x1/16) //modify 2024/6/18  old 0x10   0x20
+{0x52,0x15}, //0d // [7:0] negative edge gain (x1/16) //modify 2024/6/18  old 0x10  0x18
+{0x53,0x00}, // [3:0] core value of positive edge
+{0x54,0x14},
+{0x55,0x0f},
+{0x56,0x08},
+{0x57,0x00}, // [3:0] core value of negative edge
+{0x58,0x14},
+{0x59,0x0f},
+{0x5a,0x08},         
+{0x5b,0x10}, //20 // [7:0] positive edge clip value
+{0x5c,0x20}, //10 //20 // [7:0] negative edge clip value
+{0x5d,0x20},
+{0x5e,0x10},
+{0x5f,0x00},
+
+{0xc0,0x60},
+{0xc1,0x24},  
+
+//sensor on    
+{0x00,0x00},
+{0x03,0x05},
+};
+
+
+
+
+
+#endif
+
+#if 0
+const uint8_t sensor_sm130a_init_talbe[][2] =
+{
+//sensor on    
+{0x00,0x00},
+{0x04,0x10}, //set ga_sel//04//14
+{0x05,0x00},
+//{0x06,0x01},
+
+{0x10,0x44}, //under 48mhz}, //modify 2024/6/19  old 0x13
+//{0x10 {0x44 //at 64mhz for hd
+{0x11,0x32}, //under 48mhz},  //modify 2024/6/18  old 0x31
+//{0x11 {0x32 //at 64mhz for hd  //32
+{0x13,0x1a},
+{0x16,0xaa},
+{0x17,0x35},
+
+//ga mode for 24mhz 7.69fps sxga 
+{0x20,0x00}, //ga_bnkt//00
+{0x21,0x38}, //ga_hbnkt//10
+{0x22,0x01}, //ga_rowfil//01
+{0x23,0x13}, //ga_vbnkt//0a
+
+//gb mode for 24mhz 25fps vga 
+{0x24,0x00}, //gb_bnkt//00
+{0x25,0x0a}, //gb_hbnkt//0a
+{0x26,0x01}, //gb_rowfil//01
+{0x27,0x8d}, //gb_vbnkt  //8d
+
+//ga mode for 24mhz 7.69fps sxga 
+{0x30,0x00},  // ga_hds_h 
+{0x31,0x02},  // ga_hds_l
+{0x32,0x05},  // ga_hdw_h  1291
+{0x33,0x0b},  // ga_hdw_l
+
+//gb mode for 24mhz 25fps vga 
+{0x34,0x00},  // ga_vds_h 
+{0x35,0x98},  // ga_vds_l
+{0x36,0x02},  // ga_vdw_h 
+{0x37,0xe0},  // ga_vdw_l
+{0x51,0x02},
+
+// ae block
+{0x00,0x01},
+{0x10,0x90},
+{0x11,0x07}, //max_shutstep//07
+{0x12,0x7a}, //target
+{0x13,0x78},
+{0x14,0x74},
+{0x15,0x7f},
+
+{0x16,0x00},
+
+{0x17,0x80}, //shut_cntr
+{0x18,0x08},
+{0x19,0x04},
+
+//{0x1a,0x8a},//modify 2024/6/18  add the row
+{0x1b,0x04}, //aeblc_max   
+{0x1d,0x04},
+
+//target control
+{0x20,0x50},
+{0x24,0x72},
+{0x2a,0x40}, //dark_ref
+{0x2b,0x04}, //dark_cnt
+{0x2f,0x84}, //mask_frame 10.28 jej                  
+
+{0x34,0xa5}, //24mhz 25fps vga for gb mode//a0
+{0x35,0x83}, //24mhz 7.69fps sxga  ga mode//51
+
+{0x40,0x08},	//gain_min0
+{0x41,0x08},	//gain_min1
+{0x42,0x04},	//tgt_shut0
+{0x43,0x18},	//tgt_gain0
+{0x44,0x08},	//ref_gain0
+{0x45,0x08},	//tgt_shut1
+{0x46,0x18},	//tgt_gain1
+{0x47,0x13},	//ref_gain1
+{0x48,0x09},	//tgt_shut2
+{0x49,0x24},	//tgt_gain2
+{0x4a,0x15},	//ref_gain2
+{0x4b,0x0f},	//tgt_shut3
+{0x4c,0x34},	//tgt_gain3
+{0x4d,0x20},	//ref_gain3
+{0x4e,0x00},	//tgt_shut4
+{0x4f,0x00},	//tgt_gain4
+{0x50,0x00},	//ref_gain4
+{0x51,0x00},	//tgt_shut5
+{0x52,0x00},	//tgt_gain5
+{0x53,0x00},	//ref_gain5
+{0x54,0x38},	//gain_top
+{0x55,0x50},	//gain_max
+
+{0x56,0x01}, //half gain
+{0x5c,0x18}, //half gain off minimum gain
+{0x5d,0x55}, //gain_timing
+{0x5e,0x01}, //gain_speed
+{0x5f,0x2f}, //gain_speed_level
+
+{0x60,0x00},
+{0x61,0x7e},
+{0x62,0x7e},
+{0x63,0x7e},
+{0x64,0x7e},
+{0x65,0x00},
+{0x66,0x00},
+{0x67,0x00},
+{0x68,0x00},
+{0x69,0x00},
+{0x6a,0x00},
+{0x6b,0x00},
+{0x6c,0x05}, //weight
+{0x6d,0xab}, //mul weight
+
+//window target
+{0x70,0xcc},
+{0x73,0x84},
+{0x74,0xe0},
+{0x75,0xd0},
+{0x77,0x77},
+{0x79,0x80}, //fwin_max
+{0x7a,0x77}, //fwin_adj_max
+{0x7b,0x77}, //fwin_drk_max
+{0x7c,0x70}, //fwin_adrk_max
+{0x7d,0x70}, //fwin_min
+{0x7e,0x70}, //fwin_adj_min
+{0x7f,0x67}, //fwin_drk_min
+{0x80,0x67}, //fwin_adrk_min
+{0x81,0xb0}, //cwin_max
+
+{0x9f,0x02}, //awb working after ae 88%
+
+{0xb0,0xd3},
+{0xb1,0xe0},
+{0xb3,0xe0},
+{0xb4,0x06},
+
+{0xb5,0x80},	//ywrap
+{0xb6,0x80},
+{0xb7,0x00},
+{0xb8,0xc0},
+
+// awb block
+{0x00,0x02},
+{0x10,0x80}, 
+{0x11,0x48}, 
+{0x12,0x80}, 
+{0x13,0x5a}, 
+{0x14,0x5a}, 
+{0x15,0xcf}, 
+{0x18,0xe0}, //e0 //r gain top
+{0x19,0xa4}, //70 //r gain bot
+{0x1a,0xa3}, //f0 //b gain top
+{0x1b,0x70}, //70 //b gain bot
+{0x1c,0x88}, //cr top
+{0x1d,0x78}, //cr bot
+{0x1e,0x88}, //cb top
+{0x1f,0x78}, //cb bot
+{0x20,0x90}, //(cb+cr)/2 top
+{0x21,0x70}, //(cb+cr)/2 bot
+{0x23,0xff},	// y top
+{0x24,0x50},	// y bot
+{0x25,0x04},       // wht pixel > 6.5 %
+{0x26,0x42},       // {0x84  //{0x10  //{0x0d // bright start
+{0x27,0xc4},  //{0xca  // r gain top at bright condition
+{0x28,0xa8},  //{0xa0  // r gain bot at bright condition
+{0x29,0xa8},  //{0x98  // b gain top at bright condition
+{0x2a,0x90},  //{0x8a  // b gain bot at bright condition
+
+{0x2b,0xd0},  //{0xc0    // r gain top at dark condition
+{0x2c,0x88},    // r gain bot at dark condition
+{0x2d,0xe8},  //{0xd8    // b gain top at dark condition
+{0x2e,0x98},    // b gain bot at dark condition
+
+{0x2f,0x44},  //sampcont [6:4] : vertical skip count},[2:0]:horizontal skip count
+
+{0x38,0x05},         // awb lock range
+{0x39,0x06}, //{0x05
+{0x3c,0x13},
+{0x3d,0x6b},	//{0x48
+{0x41,0xa3},  // r gain(in)  for h~a detect
+{0x42,0xad},  // b gain(in)  for h~a detect
+{0x43,0xa3},  // r gain(out) for h~a detect
+{0x44,0xad},  // b gain(out) for h~a detect
+
+{0x45,0xc6},  // r gain(in)  for cwf detect
+{0x46,0x90},  // b gain(out) for cwf detect
+{0x47,0xc6},  // r gain(in)  for cwf detect
+{0x48,0x90},  // b gain(out) for cwf detect
+
+{0x5a,0xef}, //seltbnd  {t8},t7},....},t1}
+{0x5b,0x0f}, //white fine threshold
+{0x5c,0x30}, // ydiff th |yavgmax - yavgmin|
+{0x5d,0x98}, // [7] :enable bit},  |pregraygain-curgraygain| < [6:0] => don't update awb gain
+{0x5e,0x20}, // gain update scale => 4 code update
+
+{0x60,0x65}, //tcnt maxth1  57584}, 85%
+{0x61,0x66}, //tcnt maxth2
+{0x62,0x12}, //tcnt minth  7.5%
+
+{0x63,0x47}, //single wht maxth1 60%
+{0x64,0x4c}, //single wht maxth2
+{0x65,0x0c}, //single wht minth  5%
+{0x66,0x0c}, //scolor th  5%
+
+{0x67,0xb0}, // dark mode in threshold
+{0x68,0xa0}, // dark mode out threshold
+{0x69,0x0b}, // txmaxcnt > {th1},th2} 10 %
+{0x6a,0xe2},
+
+{0x70,0xe0}, //gvalueth   g < gvalueth for avg mode
+{0x71,0x10}, //gval min
+{0x72,0xe0}, //gval max
+
+{0x73,0x77}, //{0x80 //t1 rgain
+{0x74,0xeb}, //{0xd5 //t1 bgain
+{0x75,0x70},
+{0x76,0x81}, //{0x89 //t2 rgain
+{0x77,0xd7}, //{0xc1 //t2 bgain
+{0x78,0x50},
+{0x79,0x8d}, //{0xab //t3 rgain
+{0x7a,0xd4}, //{0xbb //t3 bgain
+{0x7b,0x70},
+{0x7c,0x98}, //{0xb9 //t4 rgain smy
+{0x7d,0xcd}, //t4 bgain
+{0x7e,0x50},
+{0x80,0xb1}, //{0xbb //t5 rgain
+{0x81,0xb8}, //{0x8f //t5 bgain
+{0x82,0x34},
+{0x83,0xc1}, //{0xd0 //t6 rgain
+{0x84,0x9c}, //{0x8c //t6 bgain
+{0x85,0x43},
+{0x86,0xd7}, //t7 rgain
+{0x87,0x82}, //t7 bgain
+{0x88,0x11},
+{0x89,0xd8}, //t8 rgain
+{0x8a,0x82}, //t8 bgain
+{0x8b,0x16},
+{0x8c,0xcd}, //rgain for outdoor sky
+{0x8d,0x94}, //bgain for outdoor sky
+{0x8e,0x66},
+{0x90,0x81}, //rgain for dark condition
+{0x91,0xdd}, //bgain for dark condition
+{0x92,0x76}, //dcrbgain {1'b0},darrgain[2:0]},1]},1'b0},darkbgain[2:0]}
+
+{0x94,0x75}, //t1r/g min   h light
+{0x95,0x88}, //t1r/g max
+{0x96,0x4a}, //t1b/g min
+{0x97,0x55}, //t1b/g max
+
+{0x98,0x68}, //t2r/g min   alight
+{0x99,0x76}, //t2r/g max
+{0x9a,0x55}, //t2b/g min
+{0x9b,0x60}, //t2b/g max
+
+{0x9c,0x5e}, //t3r/g min   tl84
+{0x9d,0x67}, //t3r/g max
+{0x9e,0x5d}, //t3b/g min
+{0x9f,0x67}, //t3b/g max
+
+{0xa0,0x59}, //t4r/g min   cwf
+{0xa1,0x5e}, //t4r/g max
+{0xa2,0x5d}, //t4b/g min
+{0xa3,0x66}, //t4b/g max
+ 
+{0xa4,0x00}, //t5r/g min   real3
+{0xa5,0x00}, //t5r/g max
+{0xa6,0x00}, //t5b/g min
+{0xa7,0x00}, //t5b/g max
+ 
+{0xa8,0x53}, //t6r/g min   real2
+{0xa9,0x5d}, //t6r/g max
+{0xaa,0x60}, //t6b/g min
+{0xab,0x70}, //{0x6d //t6b/g max
+ 
+{0xac,0x4c}, //t7r/g min    real1
+{0xad,0x58}, //{0x57 //t7r/g max
+{0xae,0x6f}, //t7b/g min
+{0xaf,0x86}, //t7b/g max
+ 
+{0xb0,0x47}, //t8r/g min    d65
+{0xb1,0x4e}, //t8r/g max
+{0xb2,0x80}, //t8b/g min
+{0xb3,0x99}, //t8b/g max
+
+//idp
+{0x00,0x03},
+{0x10,0xff},
+{0x11,0x19},//1d//0d//09//11//18//19
+{0x12,0x3d}, 
+{0x13,0xb1}, 
+{0x14,0xf8},
+ 
+{0x30,0x68}, //{0x50 subsampling
+{0x31,0x00},
+{0x35,0x26},
+{0x39,0x08},
+{0x3e,0x00}, //{0x90 subsampling
+
+// {0x94,0x02}, //window size//05
+// {0x95,0x80},	//00
+// {0x96,0x01},	//02
+// {0x97,0xe0},	//d0
+// {0x00,0x04},	//04
+{0x94,0x05}, //window size//05
+{0x95,0x00},	//00
+{0x96,0x02},	//02
+{0x97,0xd0},	//d0
+{0x00,0x04},	//04
+//shading center                                        
+{0x10,0x9d}, //aa //95 //d //a9 //b9 //a7                                      
+{0x11,0x82}, //76                                          
+//shading offset                                        
+{0x12,0x00},                                              
+{0x13,0x00},                                              
+{0x14,0x00},                                              
+{0x15,0x00},                                              
+//shading r pixel horizontal}, vertical gain             
+{0x16,0xea}, //cc //66  //d6  //4d  //9f                                         
+{0x17,0x60}, //a0 //70 //8e  //a8  //62  //a8 //86 //e0                            
+{0x18,0x90},  //b6  //a0                                         
+{0x19,0x90}, //50  //80  //a3                                         
+//shading gr pixel horizontal}, vertical gain            
+{0x1a,0xde}, //ee //aa  //8a                                              
+{0x1b,0x30}, //40  //70                                         
+{0x1c,0x40}, //50                                              
+{0x1d,0x70}, //80 //38                                              
+//shading gb pixel horizontal}, vertical gain            
+{0x1e,0xde},  //ee //aa   //8a                                              
+{0x1f,0x30}, //40  //70                                         
+{0x20,0x40}, //50                                              
+{0x21,0x70}, //80 //38                                              
+//shading b pixel horizontal}, vertical gain             
+{0x22,0xa2},  //e2                                              
+{0x23,0x20}, //70 //a2 //8d                                          
+{0x24,0x60}, //ff //c0 //c6                                              
+{0x25,0x10}, //30 //70 //30 //80                                              
+//shading start gain                                    
+{0x26,0x80},                                              
+{0x27,0x80},                                              
+{0x28,0x80},                                              
+{0x29,0x80},                                              
+//r shading position gain                               
+{0x2a,0x77},    //44   //55                                        
+{0x2b,0x45}, //88    //ad   //ab                                        
+{0x2c,0x56}, //8a    //34  //bc   //21 //8a                                    
+{0x2d,0x67}, //de    //ac    //de  //b cab   //9b                                        
+{0x2e,0x89}, //9b    //cc    //cd   //89                                     
+//gr shading position gain                              
+{0x2f,0x33}, //87                                              
+{0x30,0x45}, //54 //a9                                              
+{0x31,0x56}, //88                                              
+{0x32,0x67}, //aa  //99                                              
+{0x33,0x78}, //a9 //ba //a8   //87                                           
+//gb shading position gain                              
+{0x34,0x33}, //87                                              
+{0x35,0x45}, //54 //a9                                              
+{0x36,0x56}, //88                                              
+{0x37,0x67}, //aa  //99                                              
+{0x38,0x78}, //a9  //87                                             
+//b  shading position gain                              
+{0x39,0x44}, //44                                              
+{0x3a,0x34}, //43 //77                                              
+{0x3b,0x34}, //45 //56  //77                                              
+{0x3c,0x67}, //87 //76                                              
+{0x3d,0x89}, //78 //ba //64      
+           
+//cma
+{0x50,0xaf},
+{0x51,0x6d}, 
+{0x52,0xca}, 
+{0x53,0x09}, 
+{0x54,0xf3}, 
+{0x55,0x5f}, 
+{0x56,0xee}, 
+{0x57,0xf9}, 
+{0x58,0xc3}, 
+{0x59,0x84}, 
+
+//cmb 
+{0x60,0xef}, 
+{0x61,0x6c}, 
+{0x62,0xcb}, 
+{0x63,0x09}, 
+{0x64,0xef}, 
+{0x65,0x5a}, 
+{0x66,0xf7}, 
+{0x67,0xf6}, 
+{0x68,0xa9}, 
+{0x69,0xa1}, 
+ 
+//cmc
+{0x70,0x2f},
+{0x71,0x48}, 
+{0x72,0xe2}, 
+{0x73,0x16}, 
+{0x74,0xeb}, 
+{0x75,0x5a}, 
+{0x76,0xfb}, 
+{0x77,0xf3}, 
+{0x78,0xcd}, 
+{0x79,0x80}, 
+ 
+//cmd
+{0x80,0x2f},
+{0x81,0x4e}, 
+{0x82,0xe2}, 
+{0x83,0x10}, 
+{0x84,0xeb}, 
+{0x85,0x5a}, 
+{0x86,0xfb}, 
+{0x87,0xf3}, 
+{0x88,0xcd}, 
+{0x89,0x80}, 
+ 
+//gammma 
+{0x90,0x00}, 
+{0x91,0x02}, 
+{0x92,0x05}, 
+{0x93,0x0e}, 
+{0x94,0x17}, 
+{0x95,0x22}, 
+{0x96,0x35}, 
+{0x97,0x46}, 
+{0x98,0x55}, 
+{0x99,0x62}, 
+{0x9a,0x78}, 
+{0x9b,0x89}, 
+{0x9c,0x98}, 
+{0x9d,0xa6}, 
+{0x9e,0xb4}, 
+{0x9f,0xcc}, 
+{0xa0,0xe0}, 
+{0xa1,0xf0}, 
+{0xa2,0xf9}, 
+{0xa3,0xff}, 
+
+{0xa4,0x00},  
+{0xa5,0x02},  
+{0xa6,0x05},  
+{0xa7,0x0e},  
+{0xa8,0x17},  
+{0xa9,0x22},  
+{0xaa,0x35},  
+{0xab,0x46},  
+{0xac,0x55},  
+{0xad,0x62},  
+{0xae,0x78},  
+{0xaf,0x89},  
+{0xb0,0x98},  
+{0xb1,0xa6},  
+{0xb2,0xb4},  
+{0xb3,0xcc},  
+{0xb4,0xe0},  
+{0xb5,0xf0},  
+{0xb6,0xf9},  
+{0xb7,0xff},  
+
+{0xb8,0x00}, 
+{0xb9,0x02}, 
+{0xba,0x05}, 
+{0xbb,0x0e}, 
+{0xbc,0x17}, 
+{0xbd,0x22}, 
+{0xbe,0x35}, 
+{0xbf,0x46}, 
+{0xc0,0x55}, 
+{0xc1,0x62}, 
+{0xc2,0x78}, 
+{0xc3,0x89}, 
+{0xc4,0x98}, 
+{0xc5,0xa6}, 
+{0xc6,0xb4}, 
+{0xc7,0xcc}, 
+{0xc8,0xe0}, 
+{0xc9,0xf0}, 
+{0xca,0xf9}, 
+{0xcb,0xff},
+
+//bayer filter threshold
+{0x00,0x05},
+{0x11,0x16},
+{0x14,0xfc},
+{0x15,0x00},
+{0x18,0x00},
+{0x1c,0x80},
+{0x1f,0x0c},
+{0x24,0x30},
+
+
+{0x30,0xbf},
+{0x31,0xbb},
+{0x32,0xbb},
+{0x33,0xbb},
+{0x34,0x0a},
+
+{0x41,0x00},
+
+//dark color suppression off
+{0x00,0x06},
+//coring
+{0x49,0xc9}, //cbcorthd
+{0x4a,0xc9},
+{0x4b,0x80},
+{0x4c,0x80},
+
+//edge control
+{0x50,0xf2},
+{0x51,0x10}, // [7:0] positive edge gain (x1/16)
+{0x52,0x10}, //0d // [7:0] negative edge gain (x1/16)
+{0x53,0x00}, // [3:0] core value of positive edge
+{0x54,0x14},
+{0x55,0x0f},
+{0x56,0x08},
+{0x57,0x00}, // [3:0] core value of negative edge
+{0x58,0x14},
+{0x59,0x0f},
+{0x5a,0x08},         
+{0x5b,0x10}, //20 // [7:0] positive edge clip value
+{0x5c,0x20}, //10 //20 // [7:0] negative edge clip value
+{0x5d,0x20},
+{0x5e,0x10},
+{0x5f,0x00},
+
+{0xc0,0x60},
+{0xc1,0x24},  
+
+//sensor on    
+{0x00,0x00},
+{0x03,0x05},
+};
+
+
+
+
+
+#endif
+
+
+
+const uint8_t sensor_sm130a_640_480_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_30fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_25fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_20fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_15fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_20fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_15fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_10fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_60M_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_60M_30fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_60M_25fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_60M_20fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_640_480_60M_15fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_60M_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_60M_20fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_60M_15fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_1280_720_60M_10fps_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_800_480_60M_table[][2] =
+	{
+
+};
+
+const uint8_t sensor_sm130a_480_480_table[][2] =
+	{
+
+};
+
+bool sm130a_detect(void)
+{
+	uint8_t chip_id = 0;
+	// return false;
+	SENSOR_I2C_READ(SM130A_CHIP_ID_ADDR, &chip_id);
+	LOGW("%s, id: 0x%02X\n", __func__, chip_id);
+	if (chip_id == SM130A_CHIP_ID_VAL)
+	{
+		LOGI("%s success\n", __func__);
+		return true;
+	}
+
+	return false;
+}
+
+void sm130a_read_register(uint8_t addr, uint8_t data)
+{
+	if (sm130a_read_flag)
+	{
+		uint8_t value = 0;
+		rtos_delay_milliseconds(2);
+		SENSOR_I2C_READ(addr, &value);
+		if (value != data)
+		{
+			LOGW("0x%02x, 0x%02x-0x%02x\r\n", addr, data, value);
+		}
+	}
+}
+
+int sm130a_init(void)
+{
+	uint32_t size = sizeof(sensor_sm130a_init_talbe) / 2, i;
+
+	LOGW("%s start\n", __func__);
+
+	for (i = 0; i < size; i++)
+	{
+		SENSOR_I2C_WRITE(sensor_sm130a_init_talbe[i][0], sensor_sm130a_init_talbe[i][1]);
+		sm130a_read_register(sensor_sm130a_init_talbe[i][0], sensor_sm130a_init_talbe[i][1]);
+	}
+
+	return 0;
+}
+
+int sm130a_set_ppi(media_ppi_t ppi)
+{
+	uint32_t size, i;
+	int ret = -1;
+
+	LOGI("%s\n", __func__);
+	return 0;
+#if (!CONFIG_DVP_PCLK_72M)
+	switch (ppi)
+	{
+	case PPI_640X480:
+	{
+		size = sizeof(sensor_sm130a_640_480_60M_table) / 2;
+
+		for (i = 0; i < size; i++)
+		{
+			SENSOR_I2C_WRITE(sensor_sm130a_640_480_60M_table[i][0],
+							 sensor_sm130a_640_480_60M_table[i][1]);
+
+			sm130a_read_register(sensor_sm130a_640_480_60M_table[i][0],
+								 sensor_sm130a_640_480_60M_table[i][1]);
+		}
+		ret = 0;
+	}
+	break;
+
+	case PPI_1280X720:
+	{
+		size = sizeof(sensor_sm130a_1280_720_60M_table) / 2;
+
+		for (i = 0; i < size; i++)
+		{
+			SENSOR_I2C_WRITE(sensor_sm130a_1280_720_60M_table[i][0],
+							 sensor_sm130a_1280_720_60M_table[i][1]);
+
+			sm130a_read_register(sensor_sm130a_1280_720_60M_table[i][0],
+								 sensor_sm130a_1280_720_60M_table[i][1]);
+		}
+		ret = 0;
+	}
+	break;
+
+	case PPI_800X480:
+	{
+		size = sizeof(sensor_sm130a_800_480_60M_table) / 2;
+
+		for (i = 0; i < size; i++)
+		{
+			SENSOR_I2C_WRITE(sensor_sm130a_800_480_60M_table[i][0],
+							 sensor_sm130a_800_480_60M_table[i][1]);
+
+			sm130a_read_register(sensor_sm130a_800_480_60M_table[i][0],
+								 sensor_sm130a_800_480_60M_table[i][1]);
+		}
+		ret = 0;
+	}
+	break;
+
+	default:
+		LOGI("use default ppi:1600X1200\r\n");
+		ret = 0;
+		break;
+	}
+#else
+	switch (ppi)
+	{
+	case PPI_480X480:
+	{
+		size = sizeof(sensor_sm130a_480_480_table) / 2;
+
+		for (i = 0; i < size; i++)
+		{
+			SENSOR_I2C_WRITE(sensor_sm130a_480_480_table[i][0],
+							 sensor_sm130a_480_480_table[i][1]);
+
+			sm130a_read_register(sensor_sm130a_480_480_table[i][0],
+								 sensor_sm130a_480_480_table[i][1]);
+		}
+		ret = 0;
+	}
+	break;
+
+	case PPI_640X480:
+	{
+		size = sizeof(sensor_sm130a_640_480_table) / 2;
+
+		for (i = 0; i < size; i++)
+		{
+			SENSOR_I2C_WRITE(sensor_sm130a_640_480_table[i][0],
+							 sensor_sm130a_640_480_table[i][1]);
+
+			sm130a_read_register(sensor_sm130a_640_480_table[i][0],
+								 sensor_sm130a_640_480_table[i][1]);
+		}
+		ret = 0;
+	}
+	break;
+
+	case PPI_1280X720:
+	{
+		size = sizeof(sensor_sm130a_1280_720_table) / 2;
+
+		for (i = 0; i < size; i++)
+		{
+			SENSOR_I2C_WRITE(sensor_sm130a_1280_720_table[i][0],
+							 sensor_sm130a_1280_720_table[i][1]);
+
+			sm130a_read_register(sensor_sm130a_1280_720_table[i][0],
+								 sensor_sm130a_1280_720_table[i][1]);
+		}
+		ret = 0;
+	}
+	break;
+
+	default:
+		LOGI("use default ppi:1600X1200\r\n");
+		ret = 0;
+		break;
+	}
+#endif
+
+	return ret;
+}
+
+int sm130a_set_fps(frame_fps_t fps)
+{
+	int ret = 0, size = 0, i = 0;
+	uint8_t width_h, width_l = 0;
+	uint16_t width = 0;
+	return 0;
+	SENSOR_I2C_READ(0x97, &width_h);
+	SENSOR_I2C_READ(0x98, &width_l);
+
+	width = width_h << 8 | width_l;
+
+	if (width == 0x0500) // 1280*720
+	{
+		switch (fps)
+		{
+#if (!CONFIG_DVP_PCLK_72M)
+		case FPS20:
+		{
+			size = sizeof(sensor_sm130a_1280_720_60M_20fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_60M_20fps_table[i][0],
+								 sensor_sm130a_1280_720_60M_20fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_60M_20fps_table[i][0],
+									 sensor_sm130a_1280_720_60M_20fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS15:
+		{
+			size = sizeof(sensor_sm130a_1280_720_60M_15fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_60M_15fps_table[i][0],
+								 sensor_sm130a_1280_720_60M_15fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_60M_15fps_table[i][0],
+									 sensor_sm130a_1280_720_60M_15fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS10:
+		{
+			size = sizeof(sensor_sm130a_1280_720_60M_10fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_60M_10fps_table[i][0],
+								 sensor_sm130a_1280_720_60M_10fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_60M_10fps_table[i][0],
+									 sensor_sm130a_1280_720_60M_10fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		default:
+			ret = 0;
+			break;
+#else
+		case FPS20:
+		{
+			size = sizeof(sensor_sm130a_1280_720_20fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_20fps_table[i][0],
+								 sensor_sm130a_1280_720_20fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_20fps_table[i][0],
+									 sensor_sm130a_1280_720_20fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS15:
+		{
+			size = sizeof(sensor_sm130a_1280_720_15fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_15fps_table[i][0],
+								 sensor_sm130a_1280_720_15fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_15fps_table[i][0],
+									 sensor_sm130a_1280_720_15fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS10:
+		{
+			size = sizeof(sensor_sm130a_1280_720_10fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_10fps_table[i][0],
+								 sensor_sm130a_1280_720_10fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_10fps_table[i][0],
+									 sensor_sm130a_1280_720_10fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		default:
+		{
+			size = sizeof(sensor_sm130a_1280_720_20fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_1280_720_20fps_table[i][0],
+								 sensor_sm130a_1280_720_20fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_1280_720_20fps_table[i][0],
+									 sensor_sm130a_1280_720_20fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+#endif
+		}
+	}
+
+	if (width == 0x0280) // 640*480
+	{
+		switch (fps)
+		{
+#if (!CONFIG_DVP_PCLK_72M)
+		case FPS30:
+		{
+			size = sizeof(sensor_sm130a_640_480_60M_30fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_60M_30fps_table[i][0],
+								 sensor_sm130a_640_480_60M_30fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_60M_30fps_table[i][0],
+									 sensor_sm130a_640_480_60M_30fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS25:
+		{
+			size = sizeof(sensor_sm130a_640_480_60M_25fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_60M_25fps_table[i][0],
+								 sensor_sm130a_640_480_60M_25fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_60M_25fps_table[i][0],
+									 sensor_sm130a_640_480_60M_25fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS20:
+		{
+			size = sizeof(sensor_sm130a_640_480_60M_20fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_60M_20fps_table[i][0],
+								 sensor_sm130a_640_480_60M_20fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_60M_20fps_table[i][0],
+									 sensor_sm130a_640_480_60M_20fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS15:
+		{
+			size = sizeof(sensor_sm130a_640_480_60M_15fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_60M_15fps_table[i][0],
+								 sensor_sm130a_640_480_60M_15fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_60M_15fps_table[i][0],
+									 sensor_sm130a_640_480_60M_15fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		default:
+			ret = 0;
+			break;
+#else
+		case FPS30:
+		{
+			size = sizeof(sensor_sm130a_640_480_30fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_30fps_table[i][0],
+								 sensor_sm130a_640_480_30fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_30fps_table[i][0],
+									 sensor_sm130a_640_480_30fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS25:
+		{
+			size = sizeof(sensor_sm130a_640_480_25fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_25fps_table[i][0],
+								 sensor_sm130a_640_480_25fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_25fps_table[i][0],
+									 sensor_sm130a_640_480_25fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS20:
+		{
+			size = sizeof(sensor_sm130a_640_480_20fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_20fps_table[i][0],
+								 sensor_sm130a_640_480_20fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_20fps_table[i][0],
+									 sensor_sm130a_640_480_20fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		case FPS15:
+		{
+			size = sizeof(sensor_sm130a_640_480_15fps_table) / 2;
+
+			for (i = 0; i < size; i++)
+			{
+				SENSOR_I2C_WRITE(sensor_sm130a_640_480_15fps_table[i][0],
+								 sensor_sm130a_640_480_15fps_table[i][1]);
+
+				sm130a_read_register(sensor_sm130a_640_480_15fps_table[i][0],
+									 sensor_sm130a_640_480_15fps_table[i][1]);
+			}
+
+			ret = 0;
+			break;
+		}
+
+		default:
+			ret = 0;
+			break;
+#endif
+		}
+	}
+
+	return ret;
+}
+
+int sm130a_reset(void)
+{
+
+	return 0;
+}
+
+int sm130a_dump(media_ppi_t ppi)
+{
+	uint32_t size, i;
+	int ret = -1;
+	uint8_t value = 0;
+
+	LOGI("%s\n", __func__);
+
+	size = sizeof(sensor_sm130a_init_talbe) / 2;
+
+	for (i = 0; i < size; i++)
+	{
+		SENSOR_I2C_READ(sensor_sm130a_init_talbe[i][0], &value);
+		LOGI("[0x%02x, 0x%02x]\r\n", sensor_sm130a_init_talbe[i][0], value);
+	}
+
+	ret = kNoErr;
+
+	return ret;
+}
+
+void sm130a_read_enable(bool enable)
+{
+	sm130a_read_flag = enable;
+}
+
+const dvp_sensor_config_t dvp_sensor_sm130a =
+	{
+		.name = "sm130a",
+		.clk = MCLK_48M,
+		.fmt = PIXEL_FMT_YUYV,
+		.vsync = SYNC_HIGH_LEVEL,
+		.hsync = SYNC_HIGH_LEVEL,
+		/* default config */
+		.def_ppi = PPI_1280X720,
+		.def_fps = FPS20,
+		/* capability config */
+		.fps_cap = FPS10 | FPS15 | FPS20 | FPS25 | FPS30,
+		.ppi_cap = PPI_CAP_480X480 | PPI_CAP_640X480 | PPI_CAP_800X600 | PPI_CAP_1280X720 | PPI_CAP_1600X1200,
+		.id = ID_SM130A,
+		.address = (SM130A_WRITE_ADDRESS >> 1),
+		.init = sm130a_init,
+		.detect = sm130a_detect,
+		.set_ppi = sm130a_set_ppi,
+		.set_fps = sm130a_set_fps,
+		.power_down = sm130a_reset,
+		.dump_register = sm130a_dump,
+		.read_register = sm130a_read_enable,
+};

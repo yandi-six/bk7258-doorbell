@@ -1,0 +1,6 @@
+/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/tools/build_tools/part_table_tools/tempFiles/partitions_new.csv
+/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/tools/build_tools/part_table_tools/tempFiles/vendor_flash_partition.h
+/home/yan/work/doolbell/bk_avdk-v2.0.1.29/projects/thirdparty/test/config/bk7258/partitions.csv
+/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/tools/env_tools/beken_packager/partition_bk7256_ota_a_new.json
+/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/tools/build_tools/part_table_tools/tempFiles/configuration_new.json
+/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/tools/build_tools/part_table_tools/tempFiles/vendor_flash_new.c

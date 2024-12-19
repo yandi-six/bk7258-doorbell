@@ -1,0 +1,38 @@
+{
+    "MicroPython.executeButton": [
+        {
+            "text": "▶",
+            "tooltip": "Run",
+            "alignment": "left",
+            "command": "extension.executeFile",
+            "priority": 3.5
+        }
+    ],
+    "MicroPython.syncButton": [
+        {
+            "text": "$(sync)",
+            "tooltip": "sync",
+            "alignment": "left",
+            "command": "extension.execute",
+            "priority": 4
+        }
+    ],
+    "files.associations": {
+        "cfg_roi.h": "c",
+        "vfs_file_minor.h": "c",
+        "bk_vfs.h": "c",
+        "*.tcc": "c",
+        "cerrno": "c",
+        "mailbox_channel.h": "c",
+        "aon_rtc_driver.h": "c",
+        "chrono": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "typeinfo": "c",
+        "dvp_camera.h": "c",
+        "functional": "cpp",
+        "cstddef": "cpp"
+    }
+}

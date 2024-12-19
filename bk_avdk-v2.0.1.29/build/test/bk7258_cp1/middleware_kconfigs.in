@@ -1,0 +1,7 @@
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/arch/arm9/Kconfig"
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/arch/cm33/Kconfig"
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/arch/riscv/Kconfig"
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/compal/Kconfig"
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/driver/Kconfig"
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/soc/bk7258_cp1/Kconfig"
+source "/home/yan/work/doolbell/bk_avdk-v2.0.1.29/bk_idk/middleware/boards/bk7258_cp1/vnd_flash/Kconfig"

@@ -1,0 +1,6 @@
+menu "webrtc avi"
+	config WEBRTC_AVI
+		bool "Enable webrtc avi"
+		default n
+endmenu
+

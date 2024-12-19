@@ -1,0 +1,6 @@
+menu "webrtc minor"
+	config WEBRTC_MINOR
+		bool "Enable webrtc minor"
+		default n
+endmenu
+

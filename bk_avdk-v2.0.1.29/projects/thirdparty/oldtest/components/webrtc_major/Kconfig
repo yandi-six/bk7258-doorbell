@@ -1,0 +1,6 @@
+menu "webrtc major"
+	config WEBRTC_MAJOR
+		bool "Enable webrtc major"
+		default n
+endmenu
+

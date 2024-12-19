@@ -1,0 +1,6 @@
+menu "jpeg deocder"
+	config WEBRTC_JPEG
+		bool "Enable webrtc jpeg deocder"
+		default n
+endmenu
+

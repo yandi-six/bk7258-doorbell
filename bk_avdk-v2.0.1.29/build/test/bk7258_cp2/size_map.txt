@@ -1,0 +1,148 @@
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    822	    162	    660	      0	      0	    822	    336	startup_bk7236.c.obj (ex armino/cmsis/libcmsis.a)
+    272	    272	      0	      0	      0	    272	    110	system_bk7236xx.c.obj (ex armino/cmsis/libcmsis.a)
+   1094	    434	    660	      0	      0	   1094	    446	armino/cmsis/libcmsis.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   1616	    856	    760	      0	     72	   1688	    698	trap_base.c.obj (ex armino/cm33/libcm33.a)
+    511	    448	     63	      0	     16	    527	    20f	mpu.c.obj (ex armino/cm33/libcm33.a)
+    603	    360	    243	      0	      0	    603	    25b	stack_base.c.obj (ex armino/cm33/libcm33.a)
+      2	      2	      0	      0	      0	      2	      2	arm.c.obj (ex armino/cm33/libcm33.a)
+    124	    124	      0	      0	    256	    380	    17c	arch_interrupt.c.obj (ex armino/cm33/libcm33.a)
+   2856	   1790	   1066	      0	    344	   3200	    c80	armino/cm33/libcm33.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    138	    112	     26	      4	     13	    155	     9b	wdt_driver.c.obj (ex armino/driver/libdriver.a)
+   2681	   2294	    387	     48	     85	   2814	    afe	uart_driver.c.obj (ex armino/driver/libdriver.a)
+     78	     38	     40	      0	      0	     78	     4e	sys_driver_common.c.obj (ex armino/driver/libdriver.a)
+    394	    364	     30	      0	     24	    418	    1a2	amp_res_lock.c.obj (ex armino/driver/libdriver.a)
+    744	    676	     68	      0	    104	    848	    350	mb_ipc_cmd.c.obj (ex armino/driver/libdriver.a)
+   1291	   1276	     15	      0	    325	   1616	    650	mailbox_channel.c.obj (ex armino/driver/libdriver.a)
+    316	     60	    256	      0	      0	    316	    13c	interrupt_base.c.obj (ex armino/driver/libdriver.a)
+   1938	   1820	    118	      0	      0	   1938	    792	printf.c.obj (ex armino/driver/libdriver.a)
+     74	     56	     18	      0	      0	     74	     4a	driver.c.obj (ex armino/driver/libdriver.a)
+    464	    388	     76	      0	    285	    749	    2ed	dma_driver.c.obj (ex armino/driver/libdriver.a)
+     46	     46	      0	      0	      0	     46	     2e	reset_reason.c.obj (ex armino/driver/libdriver.a)
+     30	     30	      0	      0	      0	     30	     1e	aon_pmu_driver.c.obj (ex armino/driver/libdriver.a)
+     80	     80	      0	      0	      0	     80	     50	sys_clock_driver.c.obj (ex armino/driver/libdriver.a)
+    164	    164	      0	      0	      0	    164	     a4	mb_chnl_buff.c.obj (ex armino/driver/libdriver.a)
+    248	    248	      0	      0	    111	    359	    167	mbox0_adapter.c.obj (ex armino/driver/libdriver.a)
+    232	    232	      0	      0	     25	    257	    101	mbox0_drv.c.obj (ex armino/driver/libdriver.a)
+     84	     84	      0	      0	      0	     84	     54	sys_int_driver.c.obj (ex armino/driver/libdriver.a)
+      4	      4	      0	      0	      0	      4	      4	interrupt.c.obj (ex armino/driver/libdriver.a)
+    168	    168	      0	      8	    225	    401	    191	gpio_driver_base.c.obj (ex armino/driver/libdriver.a)
+      8	      8	      0	      0	      0	      8	      8	pwr_clk.c.obj (ex armino/driver/libdriver.a)
+     28	     28	      0	      0	      1	     29	     1d	psram_driver.c.obj (ex armino/driver/libdriver.a)
+    140	    140	      0	      0	      0	    140	     8c	gpio_driver.c.obj (ex armino/driver/libdriver.a)
+     74	     74	      0	      0	      0	     74	     4a	sys_driver.c.obj (ex armino/driver/libdriver.a)
+      2	      2	      0	      0	      0	      2	      2	dd.c.obj (ex armino/driver/libdriver.a)
+     24	     24	      0	    380	      0	    404	    194	drv_model.c.obj (ex armino/driver/libdriver.a)
+   9450	   8416	   1034	    440	   1198	  11088	   2b50	armino/driver/libdriver.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    783	    708	     75	      1	     74	    858	    35a	printf.c.obj (ex armino/bk_system/libbk_system.a)
+      2	      2	      0	      0	      0	      2	      2	reboot.c.obj (ex armino/bk_system/libbk_system.a)
+    120	    120	      0	      1	      1	    122	     7a	printf_base.c.obj (ex armino/bk_system/libbk_system.a)
+     34	     34	      0	      0	      0	     34	     22	tick.c.obj (ex armino/bk_system/libbk_system.a)
+    939	    864	     75	      2	     75	   1016	    3f8	armino/bk_system/libbk_system.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   4077	   3822	    255	     79	   1112	   5268	   1494	shell_task.c.obj (ex armino/bk_cli/libbk_cli.a)
+   2212	   1648	    564	      2	      9	   2223	    8af	cli_main.c.obj (ex armino/bk_cli/libbk_cli.a)
+    912	    712	    200	      0	      0	    912	    390	cli_event.c.obj (ex armino/bk_cli/libbk_cli.a)
+    984	    516	    468	      0	      0	    984	    3d8	cli_mem.c.obj (ex armino/bk_cli/libbk_cli.a)
+    405	    110	    295	      0	      0	    405	    195	cli_os.c.obj (ex armino/bk_cli/libbk_cli.a)
+   1112	   1080	     32	    380	      0	   1492	    5d4	shell_uart.c.obj (ex armino/bk_cli/libbk_cli.a)
+   9702	   7888	   1814	    461	   1121	  11284	   2c14	armino/bk_cli/libbk_cli.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   4722	   2230	   2492	      0	    328	   5050	   13ba	cm_backtrace.c.obj (ex armino/coredump/libcoredump.a)
+   4722	   2230	   2492	      0	    328	   5050	   13ba	armino/coredump/libcoredump.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   2400	   1922	    478	      0	     17	   2417	    971	event.c.obj (ex armino/bk_event/libbk_event.a)
+   2400	   1922	    478	      0	     17	   2417	    971	armino/bk_event/libbk_event.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    137	     80	     57	      0	      0	    137	     89	rtc_bk.c.obj (ex armino/project_defs/libproject_defs.a)
+    137	     80	     57	      0	      0	    137	     89	armino/project_defs/libproject_defs.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   1667	    868	    799	      0	      0	   1667	    683	rtos_debug.c.obj (ex armino/bk_rtos/libbk_rtos.a)
+   1817	   1596	    221	   4816	      1	   6634	   19ea	rtos_pub.c.obj (ex armino/bk_rtos/libbk_rtos.a)
+     28	     16	     12	      0	      0	     28	     1c	platform_stub.c.obj (ex armino/bk_rtos/libbk_rtos.a)
+    285	    180	    105	      0	      0	    285	    11d	mem_arch.c.obj (ex armino/bk_rtos/libbk_rtos.a)
+     58	     58	      0	      0	      0	     58	     3a	str_arch.c.obj (ex armino/bk_rtos/libbk_rtos.a)
+     68	     68	      0	      0	      4	     72	     48	pthread_local_storage.c.obj (ex armino/bk_rtos/libbk_rtos.a)
+   3923	   2786	   1137	   4816	      5	   8744	   2228	armino/bk_rtos/libbk_rtos.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    188	    100	     88	      0	      4	    192	     c0	components_init.c.obj (ex armino/bk_init/libbk_init.a)
+      4	      4	      0	      0	      0	      4	      4	bk_init.c.obj (ex armino/bk_init/libbk_init.a)
+    192	    104	     88	      0	      4	    196	     c4	armino/bk_init/libbk_init.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   3205	   2930	    275	      0	      0	   3205	    c85	queue.c.obj (ex armino/os_source/libos_source.a)
+   6072	   5564	    508	      4	    364	   6440	   1928	tasks.c.obj (ex armino/os_source/libos_source.a)
+    631	    536	     95	      4	      0	    635	    27b	port.c.obj (ex armino/os_source/libos_source.a)
+   2918	   2542	    376	      0	    132	   3050	    bea	heap_4.c.obj (ex armino/os_source/libos_source.a)
+    938	    858	     80	      0	    396	   1334	    536	timers.c.obj (ex armino/os_source/libos_source.a)
+    224	    224	      0	      0	      0	    224	     e0	portasm.c.obj (ex armino/os_source/libos_source.a)
+    132	    132	      0	      0	      0	    132	     84	list.c.obj (ex armino/os_source/libos_source.a)
+  14120	  12786	   1334	      8	    892	  15020	   3aac	armino/os_source/libos_source.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   3317	   2590	    727	      1	     66	   3384	    d38	webrtc_main.c.obj (ex armino/main/libmain.a)
+    122	     32	     90	      0	      0	    122	     7a	app_main.c.obj (ex armino/main/libmain.a)
+   1560	   1416	    144	      0	     34	   1594	    63a	webrtc_motion.c.obj (ex armino/main/libmain.a)
+   4999	   4038	    961	      1	    100	   5100	   13ec	armino/main/libmain.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    121	     98	     23	      0	      0	    121	     79	system_main.c.obj (ex armino/bk_startup/libbk_startup.a)
+     10	     10	      0	      0	      0	     10	      a	rtos_init.c.obj (ex armino/bk_startup/libbk_startup.a)
+    131	    108	     23	      0	      0	    131	     83	armino/bk_startup/libbk_startup.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    558	    374	    184	    762	      1	   1321	    529	pm.c.obj (ex armino/bk_pm/libbk_pm.a)
+    558	    374	    184	    762	      1	   1321	    529	armino/bk_pm/libbk_pm.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+   1150	   1054	     96	      0	      0	   1150	    47e	mbox0_hal.c.obj (ex armino/common/libcommon.a)
+   1878	    756	   1122	      0	      4	   1882	    75a	gpio_hal.c.obj (ex armino/common/libcommon.a)
+     66	     66	      0	      0	      0	     66	     42	wdt_hal.c.obj (ex armino/common/libcommon.a)
+    326	    326	      0	      0	      0	    326	    146	uart_hal.c.obj (ex armino/common/libcommon.a)
+     24	     24	      0	      0	      0	     24	     18	dma_hal.c.obj (ex armino/common/libcommon.a)
+   3444	   2226	   1218	      0	      4	   3448	    d78	armino/common/libcommon.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    257	      0	    257	      0	      0	    257	    101	lib_a-ctype_.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+    236	    236	      0	      0	      0	    236	     ec	lib_a-memcpy.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+    444	    444	      0	      0	      0	    444	    1bc	lib_a-strcmp.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+     76	     76	      0	      0	      0	     76	     4c	lib_a-strcasecmp.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+     88	     88	      0	      0	      0	     88	     58	lib_a-strncasecmp.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+    276	    276	      0	      0	      0	    276	    114	lib_a-strtoul.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+      0	      0	      0	   1068	      0	   1068	    42c	lib_a-impure.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a)
+   1377	   1120	    257	   1068	      0	   2445	    98d	/opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libc.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+    888	    888	      0	      0	      0	    888	    378	_arm_addsubdf3.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+   1060	   1060	      0	      0	      0	   1060	    424	_arm_muldivdf3.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+    272	    272	      0	      0	      0	    272	    110	_arm_cmpdf2.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+     64	     64	      0	      0	      0	     64	     40	_arm_fixunsdfsi.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+     48	     48	      0	      0	      0	     48	     30	_aeabi_uldivmod.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+     60	     60	      0	      0	      0	     60	     3c	_fixunsdfdi.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+    748	    748	      0	      0	      0	    748	    2ec	_udivmoddi4.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+      4	      4	      0	      0	      0	      4	      4	_dvmd_tls.o (ex /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a)
+   3144	   3144	      0	      0	      0	   3144	    c48	/opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v8-m.main+fp/hard/libgcc.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+     32	     32	      0	     85	      0	    117	     75	mpu_cfg.c.obj (ex armino/bk7258_cp2/libbk7258_cp2.a)
+   1856	   1856	      0	      0	      0	   1856	    740	interrupts.c.obj (ex armino/bk7258_cp2/libbk7258_cp2.a)
+    220	    220	      0	      0	      0	    220	     dc	sys_hal.c.obj (ex armino/bk7258_cp2/libbk7258_cp2.a)
+     98	     98	      0	      0	      0	     98	     62	aon_pmu_hal.c.obj (ex armino/bk7258_cp2/libbk7258_cp2.a)
+   2206	   2206	      0	     85	      0	   2291	    8f3	armino/bk7258_cp2/libbk7258_cp2.a
+
+   text	   code	 rodata	   data	    bss	    dec	    hex	filename
+      4	      4	      0	      0	      0	      4	      4	ate.c.obj (ex armino/bk_ate/libbk_ate.a)
+      4	      4	      0	      0	      0	      4	      4	armino/bk_ate/libbk_ate.a
+
